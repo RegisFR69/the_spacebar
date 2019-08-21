@@ -15,17 +15,21 @@ class MarkdownHelper
      */
     private $logger;
 
-    public function __construct(AdapterInterface $cache, MarkdownInterface $markdown, LoggerInterface $logger)
+    public function __construct(AdapterInterface $cache, MarkdownInterface $markdown, LoggerInterface $markdownlogger, bool $isDebug)
     {
         $this->cache = $cache;
         $this->markdown = $markdown;
-        $this->logger = $logger;
+        $this->logger = $markdownlogger;
+        $this->isDebug = $isDebug;
     }
 
     public function parse(string $source) :string
     {
         if (stripos($source, 'bacon') !== false){
             $this->logger->info('They are talking about bacon again!');
+        }
+        if ($this->isDebug) {
+            return $this->markdown->transform($source);
         }
         $item = $this->cache->getItem('markdown_'.md5($source));
         if (!$item->isHit()) {
