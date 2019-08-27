@@ -2,12 +2,23 @@
 
 namespace App\Twig;
 
+use App\Service\MarkdownHelper;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
 use Twig\TwigFunction;
 
 class AppExtension extends AbstractExtension
 {
+    /**
+     * @var MarkdownHelper
+     */
+    private $markdownHelper;
+
+    public function __construct(MarkdownHelper $markdownHelper)
+    {
+        $this->markdownHelper = $markdownHelper;
+    }
+
     public function getFilters(): array
     {
         return [
@@ -17,7 +28,7 @@ class AppExtension extends AbstractExtension
 
     public function processMarkdown($value)
     {
-        return strtoupper($value);
+        return $this->markdownHelper->parse($value);
     }
 
     public function doSomething($value)
