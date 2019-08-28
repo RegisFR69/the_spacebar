@@ -3,15 +3,12 @@
 namespace App\Controller;
 
 use App\Entity\Article;
-use App\Service\MarkdownHelper;
-//use Michelf\MarkdownInterface;
+use App\Repository\ArticleRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-//use Symfony\Component\Cache\Adapter\AdapterInterface;
 use Symfony\Component\HttpFoundation\Response;
-use Twig\Environment;
 
 class ArticleController extends AbstractController
 {
@@ -22,33 +19,29 @@ class ArticleController extends AbstractController
         $this->isDebug = $isDebug;
     }
 
+
     /**
      * @Route("/", name="app_homepage")
+     * @param EntityManagerInterface $em
+     * @return Response
      */
-    public function homepage()
+    public function homepage(ArticleRepository $repository)
     {
-        return $this->render('article/homepage.html.twig');
+        $articles = $repository->findAllPublishedOrderedByNewest();
+
+        return $this->render('article/homepage.html.twig', [
+            'articles' => $articles,
+        ]);
     }
-
-
-
-
-
 
     /**
      * @Route("/news/{slug}", name="article_show")
+     * @param Article $article
+     * @param EntityManagerInterface $em
+     * @return Response
      */
-    public function show($slug, MarkdownHelper $markdownHelper, EntityManagerInterface $em)
+    public function show(Article $article, EntityManagerInterface $em)
     {
-
-
-
-        $repository = $em->getRepository(Article::class);
-        /** @var Article $article */
-        $article = $repository->findOneBy(['slug' => $slug]);
-        if (!$article) {
-            throw $this->createNotFoundException(sprintf('No article for slug "%s"', $slug));
-        }
 
         $comments = [
             'I ate a normal rock once. It did NOT taste like bacon!',
@@ -64,12 +57,17 @@ class ArticleController extends AbstractController
 
     /**
      * @Route("/news/{slug}/heart", name="article_toggle_heart", methods={"POST"})
+     * @param Article $article
+     * @param LoggerInterface $logger
+     * @param EntityManagerInterface $em
+     * @return \Symfony\Component\HttpFoundation\JsonResponse
      */
-    public function toggleArticleHeart($slug, LoggerInterface $logger)
+    public function toggleArticleHeart(Article $article, LoggerInterface $logger, EntityManagerInterface $em)
     {
-        // TODO - actually heart/unheart the article!
+        $article->incrementHeartCount();
+        $em->flush();
 
         $logger->info('Article is being hearted!');
-        return $this->json(['hearts' => random_int(5,100)]);
+        return $this->json(['hearts' => $article->getHeartcount()]);
     }
 }
